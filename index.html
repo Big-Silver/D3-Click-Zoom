@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.background {
+  fill: none;
+  pointer-events: all;
+}
+
+.arc text {
+  font: 10px sans-serif;
+  text-anchor: middle;
+}
+
+.arc path {
+  stroke: #fff;
+}
+
+#state .active {
+  fill: orange!important;
+}
+
+</style>
+<body>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var width = 960,
+    height = 500,
+    radius = Math.min(width, height) / 2,
+    data_array,
+    centered;
+
+var color = d3.scale.ordinal()
+    .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+var arc = d3.svg.arc()
+    .outerRadius(radius - 10)
+    .innerRadius(radius - 70);
+
+var projection = d3.geo.albersUsa()
+    .scale(1070)
+    .translate([width / 2, height / 2]);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var pie = d3.layout.pie()
+    .sort(null)
+    .value(function(d) { return d.population; });
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+  .append("g")
+    .attr("class", "state")
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(1)");
+
+d3.csv("data.csv", type, function(error, data) {
+  if (error) throw error;
+  data_array = data;
+  var g = svg.selectAll(".arc")
+      .data(pie(data))
+    .enter().append("g")
+      .attr("class", "arc")
+      .on("click", clicked);
+  g.append("path")
+      .attr("d", arc)
+      .style("fill", function(d) { return color(d.data.age); });
+
+  g.append("text")
+      .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
+      .attr("dy", ".35em")
+      .text(function(d) { return d.data.age; });
+});
+
+function type(d) {
+  d.population = +d.population;
+  return d;
+}
+
+function clicked(d) {
+  var x, y, k;
+  var x1, y1;
+  var total_value = 0;
+  var modal_value = 0;
+  var array = new Array();
+
+  for (var i = 0; i < data_array.length; i++) {
+    total_value += data_array[i].population;
+  }
+
+  for (var num = 0; num < data_array.length; num++) {
+    if (d.value == data_array[num].population) {
+      modal_value += data_array[num].population;
+      break;
+    }
+    else {
+      modal_value += data_array[num].population;
+    }
+  }
+
+  console.log(modal_value);
+
+  for (var j = 0; j < 4; j++) {
+    array[j] = total_value / 4 * (j + 1);
+  }
+
+  if (d && centered !== d) {
+    var centroid = path.centroid(d);
+    if (d.value < array[0]) {
+      k = 2;
+      if (modal_value < array[0]) {
+        x1 = 0;
+        y1 = 480;
+      }
+      else if (modal_value < array[1]) {
+        x1 = 0;
+        y1 = 0;
+      }
+      else if (modal_value < array[2]) {
+        x1 = 960;
+        y1 = 0;
+      }
+      else {
+        x1 = 960;
+        y1 = 480;
+      }
+    }
+    else if (d.value < array[1]) {
+      k = 2;
+      if (modal_value < array[1]) {
+        x1 = 0;
+        y1 = 240;
+      }
+      else if (modal_value < array[2]) {
+        x1 = 480;
+        y1 = 0;
+      }
+      else {
+        x1 = 480;
+        y1 = 240;
+      }
+    }
+    else {
+      x1 = width /2;
+      y1 = height / 2;
+      k = 1;
+    }
+    console.log(k);
+    centered = d;
+  } else {
+    x1 = width / 2;
+    y1 = height / 2;
+    k = 1;
+    centered = null;
+  } 
+
+  var g = svg.selectAll("path")
+      .classed("active", centered && function(d) { return d === centered; });
+
+  var q = d3.selectAll(".state");
+
+  q.transition()
+    .duration(750)
+    .attr("transform", "translate(" + x1 + "," + y1 + ")scale(" + k + ")");     
+} 
+
+function zoomed() {
+  container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+</script>
